@@ -13,24 +13,34 @@ def fetch_listings(url):
 
 def parse_listings(html):
     soup = BeautifulSoup(html, 'html.parser')
-    
-    rows = soup.select('tr[id^=tr_]')
+
+    main_table = soup.find('table', id='page_main')
+
+    if not main_table:
+        print("Could not find main listings table.")
+        return
+
+    rows = main_table.find_all('tr', id=lambda x: x and x.startswith('tr_'))
+
+    if not rows:
+        print("No ad rows found.")
+        return
 
     for row in rows:
-        title_element = row.select_one('.msga2-o')
-        price_element = row.select_one('.msga2-o.pp6')
-        location_element = row.select('td')[-2] if len(row.select('td')) > 1 else None
-        date_element = row.select('td')[-1] if len(row.select('td')) > 0 else None
+        cols = row.find_all('td')
 
-        title = title_element.get_text(strip=True) if title_element else 'N/A'
-        price = price_element.get_text(strip=True) if price_element else 'N/A'
-        location = location_element.get_text(strip=True) if location_element else 'N/A'
-        date = date_element.get_text(strip=True) if date_element else 'N/A'
+        if len(cols) < 5:
+            continue 
+        
+        title = cols[2].get_text(strip=True)
+        location = cols[3].get_text(strip=True)
+        date = cols[4].get_text(strip=True)
+        price = cols[5].get_text(strip=True)
 
         print(f"Title: {title}")
-        print(f"Price: {price}")
         print(f"Location: {location}")
         print(f"Date: {date}")
+        print(f"Price: {price}")
         print("-" * 40)
 
 def main():
