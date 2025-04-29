@@ -1,11 +1,14 @@
 import requests
 from bs4 import BeautifulSoup
 
-BASE_URL = 'https://www.ss.lv/en/transport/cars/'
+def get_brand_url(brand):
+    brand = brand.lower()
+    return f"https://www.ss.lv/en/transport/cars/{brand}/"
 
 def fetch_listings(url):
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Accept-Language": "en-US,en;q=0.9",
     }
     response = requests.get(url, headers=headers)
     response.raise_for_status()
@@ -20,18 +23,17 @@ def parse_listings(html):
         print("Could not find main listings table.")
         return
 
-    rows = main_table.find_all('tr', id=lambda x: x and x.startswith('tr_'))
+    ad_rows = main_table.select('tr[id^=tr_]')
 
-    if not rows:
-        print("No ad rows found.")
+    if not ad_rows:
+        print("No listing rows found.")
         return
 
-    for row in rows:
+    for row in ad_rows:
         cols = row.find_all('td')
+        if len(cols) < 6:
+            continue
 
-        if len(cols) < 5:
-            continue 
-        
         title = cols[2].get_text(strip=True)
         location = cols[3].get_text(strip=True)
         date = cols[4].get_text(strip=True)
@@ -44,8 +46,15 @@ def parse_listings(html):
         print("-" * 40)
 
 def main():
-    html = fetch_listings(BASE_URL)
-    parse_listings(html)
+    brand = input("Enter the car brand you want to search for: ").strip().lower()
+    url = get_brand_url(brand)
+    try:
+        html = fetch_listings(url)
+        parse_listings(html)
+    except requests.HTTPError as e:
+        print(f"HTTP error occurred: {e}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
 if __name__ == "__main__":
     main()
