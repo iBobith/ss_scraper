@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-import time
+import csv
 
 BASE_URL = "https://www.ss.lv"
 
@@ -13,7 +13,7 @@ def fetch_html(url):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
         "Accept-Language": "en-US,en;q=0.9",
     }
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=headers, timeout=10)
     response.raise_for_status()
     return response.text
 
@@ -40,21 +40,19 @@ def parse_ad_page(html):
     soup = BeautifulSoup(html, 'html.parser')
 
     title_tag = soup.find('h2')
-    if not title_tag:
-        title_tag = soup.find('h1')
-
     if title_tag:
-        title = title_tag.get_text(strip=True)
+        full_name = title_tag.get_text(strip=True)
     else:
-        title = "No Title Found"
+        full_name = "Unknown Model"
 
     price_tag = soup.find('td', class_='ads_price')
     if price_tag:
-        price = price_tag.get_text(strip=True)
+        price_text = price_tag.get_text(separator=" ", strip=True)
+        price_clean = price_text.split("€")[0].replace(" ", "").strip()
     else:
-        price = "No Price Found"
+        price_clean = "Unknown"
 
-    return title, price
+    return full_name, price_clean
 
 def main():
     brand = input("Enter the car brand you want to search for (e.g., BMW, Audi, Toyota): ").strip().lower()
@@ -67,18 +65,29 @@ def main():
 
         print(f"Found {len(ad_links)} listings.")
 
+        results = []
+
         for link in ad_links:
             try:
                 ad_html = fetch_html(link)
-                title, price = parse_ad_page(ad_html)
+                car_name, price = parse_ad_page(ad_html)
 
-                print(f"Car: {title}")
-                print(f"Price: {price}")
+                print(f"Car: {car_name}")
+                print(f"Price: €{price}")
                 print("-" * 40)
 
-                time.sleep(1)
+                results.append((car_name, f"€{price}"))
+
             except Exception as e:
                 print(f"Failed to fetch ad {link}: {e}")
+
+        filename = f"{brand}_cars.csv"
+        with open(filename, mode='w', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+            writer.writerow(["Car", "Price"])
+            writer.writerows(results)
+
+        print(f"Results saved to {filename}.")
 
     except requests.HTTPError as e:
         print(f"HTTP error occurred: {e}")
