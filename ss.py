@@ -4,9 +4,12 @@ import csv
 
 BASE_URL = "https://www.ss.lv"
 
-def get_brand_url(brand):
+def get_brand_url(brand, page=1):
     brand = brand.lower()
-    return f"{BASE_URL}/en/transport/cars/{brand}/"
+    if page == 1:
+        return f"{BASE_URL}/en/transport/cars/{brand}/"
+    else:
+        return f"{BASE_URL}/en/transport/cars/{brand}/page{page}.html"
 
 def fetch_html(url):
     headers = {
@@ -36,51 +39,88 @@ def parse_list_page(html):
             links.append(full_link)
     return links
 
+def clean_car_name(name):
+    parts = name.split('/')
+    parts = [part.strip() for part in parts if part.strip() and part.strip().lower() not in ['cars', 'buy', 'sell']]
+    cleaned_name = ' '.join(parts)
+    return cleaned_name
+
 def parse_ad_page(html):
     soup = BeautifulSoup(html, 'html.parser')
 
     title_tag = soup.find('h2')
     if title_tag:
-        full_name = title_tag.get_text(strip=True)
+        raw_title = title_tag.get_text(strip=True)
+        car_name = clean_car_name(raw_title)
     else:
-        full_name = "Unknown Model"
+        car_name = "Unknown Model"
 
     price_tag = soup.find('td', class_='ads_price')
     if price_tag:
         price_text = price_tag.get_text(separator=" ", strip=True)
-        price_clean = price_text.split("€")[0].replace(" ", "").strip()
+        price_number = price_text.split("€")[0].replace(" ", "").strip()
     else:
-        price_clean = "Unknown"
+        price_number = None
 
-    return full_name, price_clean
+    return car_name, price_number
+
+def is_valid_price(price_text):
+    if not price_text:
+        return False
+    return price_text.isdigit()
 
 def main():
     brand = input("Enter the car brand you want to search for (e.g., BMW, Audi, Toyota): ").strip().lower()
-    list_url = get_brand_url(brand)
-
     try:
-        print(f"Fetching listings for {brand.title()}...")
-        list_html = fetch_html(list_url)
-        ad_links = parse_list_page(list_html)
+        max_pages = int(input("How many pages would you like to scrape? : ").strip())
+    except ValueError:
+        print("Invalid input for number of pages. Defaulting to 1.")
+        max_pages = 1
 
-        print(f"Found {len(ad_links)} listings.")
+    all_links = []
 
-        results = []
+    for page in range(1, max_pages + 1):
+        try:
+            list_url = get_brand_url(brand, page)
+            list_html = fetch_html(list_url)
+            ad_links = parse_list_page(list_html)
 
-        for link in ad_links:
-            try:
-                ad_html = fetch_html(link)
-                car_name, price = parse_ad_page(ad_html)
+            if not ad_links:
+                print(f"No more listings found on page {page}. Stopping.")
+                break
 
-                print(f"Car: {car_name}")
-                print(f"Price: €{price}")
-                print("-" * 40)
+            all_links.extend(ad_links)
+            print(f"Page {page}: Found {len(ad_links)} listings.")
 
-                results.append((car_name, f"€{price}"))
+        except requests.HTTPError as e:
+            print(f"HTTP error on page {page}: {e}")
+            break
+        except Exception as e:
+            print(f"Error on page {page}: {e}")
+            break
 
-            except Exception as e:
-                print(f"Failed to fetch ad {link}: {e}")
+    print(f"Total listings found: {len(all_links)}. Fetching details...")
 
+    results = []
+
+    for link in all_links:
+        try:
+            ad_html = fetch_html(link)
+            car_name, price = parse_ad_page(ad_html)
+
+            if not is_valid_price(price):
+                continue 
+
+            print(f"Car: {car_name}")
+            print(f"Price: €{price}")
+            print("-" * 40)
+
+            results.append((car_name, f"€{price}"))
+
+        except Exception as e:
+            print(f"Failed to fetch ad {link}: {e}")
+
+    if results:
         filename = f"{brand}_cars.csv"
         with open(filename, mode='w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
@@ -88,11 +128,8 @@ def main():
             writer.writerows(results)
 
         print(f"Results saved to {filename}.")
-
-    except requests.HTTPError as e:
-        print(f"HTTP error occurred: {e}")
-    except Exception as e:
-        print(f"An error occurred: {e}")
+    else:
+        print("No valid cars with numeric prices found. No file saved.")
 
 if __name__ == "__main__":
     main()
