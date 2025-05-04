@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import csv
+import os
 
 BASE_URL = "https://www.ss.lv"
 
@@ -40,14 +41,16 @@ def parse_list_page(html):
     return links
 
 def clean_car_name(name):
+    # Remove unnecessary parts from the car name
     parts = name.split('/')
-    parts = [part.strip() for part in parts if part.strip() and part.strip().lower() not in ['cars', 'buy', 'sell']]
+    parts = [part.strip() for part in parts if part.strip() and part.strip().lower() not in ['cars', 'buy', 'sell', 'change']]
     cleaned_name = ' '.join(parts)
     return cleaned_name
 
 def parse_ad_page(html):
     soup = BeautifulSoup(html, 'html.parser')
 
+    # Get car name
     title_tag = soup.find('h2')
     if title_tag:
         raw_title = title_tag.get_text(strip=True)
@@ -55,6 +58,7 @@ def parse_ad_page(html):
     else:
         car_name = "Unknown Model"
 
+    # Get price
     price_tag = soup.find('td', class_='ads_price')
     if price_tag:
         price_text = price_tag.get_text(separator=" ", strip=True)
@@ -70,7 +74,7 @@ def is_valid_price(price_text):
     return price_text.isdigit()
 
 def main():
-    brand = input("Enter the car brand you want to search for (e.g., BMW, Audi, Toyota): ").strip().lower()
+    brand = input("Enter the car brand you want to search for (BMW, Audi, Toyota): ").strip().lower()
     try:
         max_pages = int(input("How many pages would you like to scrape? : ").strip())
     except ValueError:
@@ -78,8 +82,11 @@ def main():
         max_pages = 1
 
     all_links = []
+    page = 1
+    previous_page_count = 0 
 
-    for page in range(1, max_pages + 1):
+    
+    while True:
         try:
             list_url = get_brand_url(brand, page)
             list_html = fetch_html(list_url)
@@ -92,6 +99,18 @@ def main():
             all_links.extend(ad_links)
             print(f"Page {page}: Found {len(ad_links)} listings.")
 
+            # Stop if the current page has fewer listings than the previous page
+            if page > 1 and len(ad_links) < previous_page_count:
+                print(f"Page {page} has fewer listings ({len(ad_links)}) than the previous page ({previous_page_count}). Stopping.")
+                break
+
+            previous_page_count = len(ad_links)
+            page += 1
+
+            if page > max_pages:
+                print(f"Reached the maximum number of pages ({max_pages}). Stopping.")
+                break
+
         except requests.HTTPError as e:
             print(f"HTTP error on page {page}: {e}")
             break
@@ -99,7 +118,7 @@ def main():
             print(f"Error on page {page}: {e}")
             break
 
-    print(f"Total listings found: {len(all_links)}. Fetching details...")
+    print(f"Total listings: {len(all_links)}. Fetching details...")
 
     results = []
 
@@ -109,22 +128,25 @@ def main():
             car_name, price = parse_ad_page(ad_html)
 
             if not is_valid_price(price):
-                continue 
+                continue  # Skip listings that don't have numeric prices
 
             print(f"Car: {car_name}")
             print(f"Price: €{price}")
+            print(f"Link: {link}")
             print("-" * 40)
 
-            results.append((car_name, f"€{price}"))
+            results.append((car_name, f"€{price}", link))
 
         except Exception as e:
-            print(f"Failed to fetch ad {link}: {e}")
+            print(f"Failed to fetch listing {link}: {e}")
 
     if results:
-        filename = f"{brand}_cars.csv"
+        # Save scraped data into a CSV file
+        os.makedirs("results", exist_ok=True)
+        filename = f"results/{brand}_cars.csv"
         with open(filename, mode='w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
-            writer.writerow(["Car", "Price"])
+            writer.writerow(["Car", "Price", "Link"]) 
             writer.writerows(results)
 
         print(f"Results saved to {filename}.")
