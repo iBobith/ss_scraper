@@ -32,5 +32,5 @@ Projekta laikā tiek izmantotas Python iebūvētās datu struktūras:
    - Terminālā tiek izvadīti visi atrastie sludinājumi ar attiecīgiem datiem, kā arī ir iespējams atvērt izveidoto CSV failu, lai apskatītu iegūtos datus.
 
 ## Demonstrācijas video
-[Skatīt programmas darbības video](https://drive.google.com/file/d/1YJitugRM2QKORxQU2B1YAhc0fSBcgJl7/view?usp=sharing)
+### [Skatīt programmas darbības video](https://drive.google.com/file/d/1YJitugRM2QKORxQU2B1YAhc0fSBcgJl7/view?usp=sharing)
 Piezīme: Īsti nesapratu kādēļ, bet saglabājot datus uz manu windows datoru .csv failā, eiro simboli tika uzrādīti ka excel utf-8 sintakse. Diemžēl, nebiju spējīgs to izlabot, toties visur citur dati tika saglabāti pareizi, kā bija redzams notepad. Linux sistēmā, saglabājot .csv failā gan rādijās attiecīgie eiro simboli.
