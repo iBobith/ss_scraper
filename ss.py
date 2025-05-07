@@ -81,6 +81,17 @@ def main():
         print("Invalid input for number of pages. Defaulting to 1.")
         max_pages = 1
 
+    # Input for minimum and maximum prices
+    try:
+        min_price_input = input("Enter the minimum price (leave empty for no minimum): ").strip()
+        max_price_input = input("Enter the maximum price (leave empty for no maximum): ").strip()
+
+        min_price = int(min_price_input) if min_price_input else 0
+        max_price = int(max_price_input) if max_price_input else 0
+    except ValueError:
+        print("Invalid input. Please enter numeric values for prices.")
+        exit()
+
     all_links = []
     page = 1
     previous_page_count = 0 
@@ -125,10 +136,15 @@ def main():
     for link in all_links:
         try:
             ad_html = fetch_html(link)
-            car_name, price = parse_ad_page(ad_html)
+            car_name, price_text = parse_ad_page(ad_html)
 
-            if not is_valid_price(price):
+            if not is_valid_price(price_text):
                 continue  # Skip listings that don't have numeric prices
+
+            price = int(price_text)
+
+            if (min_price > 0 and price < min_price) or (max_price > 0 and price > max_price):
+                continue  # Skip listings outside the price range
 
             print(f"Car: {car_name}")
             print(f"Price: €{price}")
@@ -141,17 +157,21 @@ def main():
             print(f"Failed to fetch listing {link}: {e}")
 
     if results:
-        # Save scraped data into a CSV file
-        os.makedirs("results", exist_ok=True)
-        filename = f"results/{brand}_cars.csv"
-        with open(filename, mode='w', newline='', encoding='utf-8') as file:
-            writer = csv.writer(file)
-            writer.writerow(["Car", "Price", "Link"]) 
-            writer.writerows(results)
+        save_data = input("Do you want to save the scraped data to a CSV file? (y/n): ").strip().lower()
+        if save_data in ['yes', 'y']:
+            # Save scraped data into a CSV file
+            os.makedirs("results", exist_ok=True)
+            filename = f"results/{brand}_cars.csv"
+            with open(filename, mode='w', newline='', encoding='utf-8') as file:
+                writer = csv.writer(file)
+                writer.writerow(["Car", "Price", "Link"]) 
+                writer.writerows(results)
 
-        print(f"Results saved to {filename}.")
+            print(f"Results saved to {filename}.")
+        else:
+            print("Results were not saved.")
     else:
-        print("No valid cars with numeric prices found. No file saved.")
+        print("No results to save.")
 
 if __name__ == "__main__":
     main()
