@@ -1,7 +1,7 @@
 # ss_scraper
 
 ## Projekta uzdevums
-Projekta mērķis ir izveidot tīmekļa skrāpēšanas rīku, kas automātiski iegūst automašīnu sludinājumus no ss.lv. Programma ļauj lietotājam norādīt maksimālo lapu skaitu, ko skrāpēt, un saglabā iegūtos datus CSV failā (mašīnas nosaukumu, cenu un linku uz mašīnas sludinājumu).
+Projekta mērķis ir izveidot tīmekļa skrāpēšanas rīku, kas automātiski iegūst automašīnu sludinājumus no ss.lv. Programma ļauj lietotājam norādīt noteiktas mašīnas marku, cenu apjomu un maksimālo lapu skaitu, ko skrāpēt, un vaicā vai lietotājs vēlās saglabā iegūtos datus CSV failā.
 
 ## Izmantotās Python bibliotēkas un to pielietojums
 Projekta izstrādes laikā tiek izmantotas sekojošas Python bibliotēkas:
@@ -23,14 +23,14 @@ Projekta laikā tiek izmantotas Python iebūvētās datu struktūras:
      python ss.py
      ```
 2. **Lietotāja ievade**:
-   - Programma pieprasa lietotājam ievadīt mašīnas marku un maksimālo lapu skaitu, ko skrāpēt.
+   - Programma pieprasa lietotājam ievadīt mašīnas marku, minimālo un maksimālo cenu apjomu, un maksimālo lapu skaitu, ko skrāpēt.
 3. **Datu iegūšana**:
-   - Programma automātiski ģenerē saites uz sludinājumu lapām, iegūst HTML saturu un parsē mašīnu nosaukumus, cenas un linkus.
+   - Programma automātiski ģenerē saites uz sludinājumu lapām, iegūst HTML saturu un parsē mašīnu nosaukumus, un cenas (izvēlētajā intervālā).
 4. **Rezultātu saglabāšana**:
-   - Iegūtie dati tiek saglabāti CSV failā direktorijā `results`. Faila nosaukums ir atkarīgs no izvēlēto marku, piemēram, `results/{brand}_cars.csv`, kur {brand} ir izvēlētā marka (peim. results/bmw_cars.csv).
+   - Iegūtos datus ir iespējams saglabat kā CSV failu direktorijā `results`. Faila nosaukums ir atkarīgs no izvēlēto marku, piemēram, `results/{brand}_cars.csv`, kur {brand} ir izvēlētā marka (peim. results/bmw_cars.csv). Failu tikai saglabā, ja lietotājs ir to apstiprinājis.
 5. **Rezultātu pārskatīšana**:
    - Terminālā tiek izvadīti visi atrastie sludinājumi ar attiecīgiem datiem, kā arī ir iespējams atvērt izveidoto CSV failu, lai apskatītu iegūtos datus.
 
 ## Demonstrācijas video
-### [Skatīt programmas darbības video](https://drive.google.com/file/d/1YJitugRM2QKORxQU2B1YAhc0fSBcgJl7/view?usp=sharing)
+### [Skatīt programmas darbības video](https://drive.google.com/file/d/1opBXSi0BkO5QFW_42yb2kg2HCSkjN6V8/view?usp=sharing)
 Piezīme: Īsti nesapratu kādēļ, bet saglabājot datus uz manu windows datoru .csv failā, eiro simboli tika uzrādīti ka excel utf-8 sintakse. Diemžēl, nebiju spējīgs to izlabot, toties visur citur dati tika saglabāti pareizi, kā bija redzams notepad. Linux sistēmā, saglabājot .csv failā gan rādijās attiecīgie eiro simboli.
